@@ -223,29 +223,47 @@ class GravitySlingshotGame {
     }
     
     setupEventListeners() {
-        // Power slider
-        const powerSlider = document.getElementById('powerSlider');
-        powerSlider.addEventListener('click', (e) => {
-            const rect = powerSlider.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const width = rect.width;
-            this.gameState.power = Math.max(10, Math.min(100, (x / width) * 100));
-            this.updateUI();
-        });
-        
-        // Buttons
-        document.getElementById('launchBtn').addEventListener('click', () => {
-            this.launchProbe();
-        });
-        
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            this.resetGame();
-        });
-        
-        document.getElementById('trackBtn').addEventListener('click', () => {
-            this.gameState.trackProbe = !this.gameState.trackProbe;
-            this.updateUI();
-        });
+        // Wait for DOM to be fully loaded
+        setTimeout(() => {
+            // Power slider
+            const powerSlider = document.getElementById('powerSlider');
+            if (powerSlider) {
+                powerSlider.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rect = powerSlider.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const width = rect.width;
+                    this.gameState.power = Math.max(10, Math.min(100, (x / width) * 100));
+                    this.updateUI();
+                });
+            }
+            
+            // Buttons
+            const launchBtn = document.getElementById('launchBtn');
+            if (launchBtn) {
+                launchBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.launchProbe();
+                });
+            }
+            
+            const resetBtn = document.getElementById('resetBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.resetGame();
+                });
+            }
+            
+            const trackBtn = document.getElementById('trackBtn');
+            if (trackBtn) {
+                trackBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.gameState.trackProbe = !this.gameState.trackProbe;
+                    this.updateUI();
+                });
+            }
+        }, 100);
         
         // Window resize
         window.addEventListener('resize', () => {
