@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Slingshot Challenge</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #canvas3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .ui-element {
+            pointer-events: auto;
+        }
+        
+        #title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            font-size: 16px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .button:hover {
+            background: #45a049;
+        }
+        
+        .button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        #powerSlider {
+            width: 200px;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #powerFill {
+            height: 100%;
+            background: linear-gradient(to right, #4caf50, #ffeb3b, #f44336);
+            width: 100%;
+            transition: width 0.1s;
+        }
+        
+        #crosshair {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+        
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #ffeb3b;
+        }
+        
+        #crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+            top: 0;
+        }
+        
+        #crosshair::after {
+            width: 20px;
+            height: 2px;
+            left: 0;
+            top: 9px;
+        }
+        
+        .target-indicator {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #f44336;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 6;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+        
+        .trajectory-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(255, 235, 59, 0.7);
+            pointer-events: none;
+            z-index: 3;
+            transform-origin: left center;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="canvas3d"></canvas>
+        
+        <div id="ui">
+            <div id="title">Gravity Slingshot Challenge</div>
+            
+            <div id="instructions">
+                Launch probes from outside the solar system and use planetary gravity to hit both targets!
+                <br><br>
+                • Click and drag to aim
+                <br>
+                • Use mouse wheel to zoom
+                <br>
+                • Right-click drag to rotate view
+            </div>
+            
+            <div id="stats">
+                <div>Targets Hit: <span id="targetsHit">0</span>/2</div>
+                <div>Probes Used: <span id="probesUsed">0</span></div>
+            </div>
+        </div>
+        
+        <div id="crosshair"></div>
+        
+        <div id="controls">
+            <div style="color: #fff; margin-bottom: 5px;">Power: <span id="powerValue">100</span>%</div>
+            <div id="powerSlider" class="ui-element">
+                <div id="powerFill"></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="launchBtn" class="button ui-element">Launch Probe</button>
+                <button id="resetBtn" class="button ui-element">Reset</button>
+            </div>
+            
+            <button id="trackBtn" class="button ui-element">Track Probe: OFF</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html> 
