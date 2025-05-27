@@ -34,6 +34,7 @@ class GravitySlingshotGame {
         this.targets = [];
         this.probes = [];
         this.trajectoryLines = [];
+        this.probeTrails = [];
         
         this.init();
     }
@@ -365,7 +366,9 @@ class GravitySlingshotGame {
         probe.userData = {
             velocity: velocity,
             trail: [],
-            active: true
+            active: true,
+            trailPoints: [],
+            lastTrailTime: Date.now()
         };
         
         this.probes.push(probe);
@@ -408,11 +411,8 @@ class GravitySlingshotGame {
             probe.userData.velocity.add(acceleration.multiplyScalar(dt));
             probe.position.add(probe.userData.velocity.clone().multiplyScalar(dt));
             
-            // Add to trail
-            probe.userData.trail.push(probe.position.clone());
-            if (probe.userData.trail.length > 100) {
-                probe.userData.trail.shift();
-            }
+            // Update trail
+            this.updateProbeTrail(probe);
             
             // Check target collisions
             this.targets.forEach(target => {
@@ -435,7 +435,100 @@ class GravitySlingshotGame {
             if (probe.position.length() > 150) {
                 probe.userData.active = false;
                 this.scene.remove(probe);
+                
+                // Transfer trail points to orphaned trails for cleanup
+                if (probe.userData.trailPoints) {
+                    this.probeTrails.push(...probe.userData.trailPoints);
+                }
+                
                 this.probes.splice(probeIndex, 1);
+            }
+        });
+        
+        // Update and clean up trails
+        this.updateTrails();
+    }
+    
+    updateProbeTrail(probe) {
+        const now = Date.now();
+        
+        // Add new trail point every 50ms for smooth trail
+        if (now - probe.userData.lastTrailTime > 50) {
+            const trailPoint = {
+                position: probe.position.clone(),
+                timestamp: now,
+                mesh: null
+            };
+            
+            // Create dotted trail point
+            const dotGeometry = new THREE.SphereGeometry(0.1, 6, 6);
+            const dotMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.8
+            });
+            const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+            dot.position.copy(trailPoint.position);
+            
+            trailPoint.mesh = dot;
+            probe.userData.trailPoints.push(trailPoint);
+            this.scene.add(dot);
+            
+            probe.userData.lastTrailTime = now;
+        }
+    }
+    
+    updateTrails() {
+        const now = Date.now();
+        const maxTrailAge = 7000; // 7 seconds
+        
+        // Update all probe trails
+        this.probes.forEach(probe => {
+            if (!probe.userData.trailPoints) return;
+            
+            probe.userData.trailPoints.forEach((trailPoint, index) => {
+                const age = now - trailPoint.timestamp;
+                
+                if (age > maxTrailAge) {
+                    // Remove old trail points
+                    if (trailPoint.mesh) {
+                        this.scene.remove(trailPoint.mesh);
+                        trailPoint.mesh.geometry.dispose();
+                        trailPoint.mesh.material.dispose();
+                    }
+                    probe.userData.trailPoints.splice(index, 1);
+                } else {
+                    // Fade trail points over time
+                    const fadeRatio = 1 - (age / maxTrailAge);
+                    if (trailPoint.mesh) {
+                        trailPoint.mesh.material.opacity = 0.8 * fadeRatio;
+                        // Scale down older points
+                        const scale = 0.5 + (0.5 * fadeRatio);
+                        trailPoint.mesh.scale.setScalar(scale);
+                    }
+                }
+            });
+        });
+        
+        // Clean up trails from removed probes
+        this.probeTrails = this.probeTrails.filter(trail => {
+            const age = now - trail.timestamp;
+            if (age > maxTrailAge) {
+                if (trail.mesh) {
+                    this.scene.remove(trail.mesh);
+                    trail.mesh.geometry.dispose();
+                    trail.mesh.material.dispose();
+                }
+                return false;
+            } else {
+                // Fade orphaned trails
+                const fadeRatio = 1 - (age / maxTrailAge);
+                if (trail.mesh) {
+                    trail.mesh.material.opacity = 0.8 * fadeRatio;
+                    const scale = 0.5 + (0.5 * fadeRatio);
+                    trail.mesh.scale.setScalar(scale);
+                }
+                return true;
             }
         });
     }
@@ -470,11 +563,31 @@ class GravitySlingshotGame {
     }
     
     resetGame() {
-        // Remove all probes
+        // Remove all probes and their trails
         this.probes.forEach(probe => {
             this.scene.remove(probe);
+            // Clean up probe trails
+            if (probe.userData.trailPoints) {
+                probe.userData.trailPoints.forEach(trailPoint => {
+                    if (trailPoint.mesh) {
+                        this.scene.remove(trailPoint.mesh);
+                        trailPoint.mesh.geometry.dispose();
+                        trailPoint.mesh.material.dispose();
+                    }
+                });
+            }
         });
         this.probes = [];
+        
+        // Clean up orphaned trails
+        this.probeTrails.forEach(trail => {
+            if (trail.mesh) {
+                this.scene.remove(trail.mesh);
+                trail.mesh.geometry.dispose();
+                trail.mesh.material.dispose();
+            }
+        });
+        this.probeTrails = [];
         
         // Reset targets
         this.targets.forEach(target => {
